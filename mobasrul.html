@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload File to GitHub</title>
+</head>
+<body>
+    <h1>Upload File to GitHub</h1> 
+    <form id="upload-form">
+        <label for="file">Select file:</label>
+        <input type="file" id="file" required>
+        <br>
+        <label for="repo">Repository Name:</label>
+        <input type="text" id="repo" value="Mobasrul/web-programming" readonly>
+        <br>
+        <label for="path">File Path in Repo:</label>
+        <input type="text" id="path" placeholder="e.g., folder/file.txt" required>
+        <br>
+        <label for="token">GitHub Token:</label>
+        <input type="password" id="token" required>
+        <br>
+        <button type="submit">Upload</button>
+    </form>
+
+    <div id="response"></div>
+
+    <script>
+        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const fileInput = document.getElementById('file');
+            const repo = document.getElementById('repo').value;
+            const path = document.getElementById('path').value;
+            const token = document.getElementById('token').value;
+
+            const file = fileInput.files[0];
+
+            if (!file) {
+                document.getElementById('response').innerText = 'No file selected!';
+                return;
+            }
+
+            const reader = new FileReader();
+
+            // When the file is read successfully
+            reader.onload = async () => {
+                const content = btoa(reader.result); // Encode file content to base64
+
+                // Create GitHub API URL
+                const url = `https://api.github.com/repos/${repo}/contents/${path}`;
+
+                // Prepare request payload
+                const payload = {
+                    message: `Add file: ${file.name}`,
+                    content: content
+                };
+
+                try {
+                    // Make a PUT request to GitHub API
+                    const response = await fetch(url, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        document.getElementById('response').innerHTML = 
+                            `<p>File uploaded successfully! <a href="${result.content.html_url}" target="_blank">View file on GitHub</a></p>`;
+                    } else {
+                        document.getElementById('response').innerText = `Error: ${result.message}`;
+                    }
+                } catch (error) {
+                    document.getElementById('response').innerText = `Request failed: ${error.message}`;
+                }
+            };
+
+            // Read the file as a binary string
+            reader.readAsBinaryString(file);
+        });
+    </script>
+</body>
+</html>
